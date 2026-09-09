@@ -70,7 +70,7 @@ duration = 5 * 5700.0  # About 5 orbits
 env_args = dict(
     satellite=sat,
     scenario=scene.UniformTargets(n_targets=2000),
-    rewarder=data.UniqueImageReward(),
+    rewarder=data.UniqueImageReward(reward_fn=lambda p: p / 100),
     time_limit=duration,
     failure_penalty=-1.0,
     terminate_on_time_limit=True,
@@ -106,15 +106,15 @@ from bsk_rl.utils.rllib.callbacks import WrappedEpisodeDataCallbacks
 N_CPUS = 3
 
 training_args = dict(
-    lr=0.00003,
-    gamma=0.999,
-    train_batch_size=250,  # usually a larger number, like 2500
-    num_sgd_iter=10,
-    model=dict(fcnet_hiddens=[512, 512], vf_share_layers=False),
-    lambda_=0.95,
+    lr=0.00003, #learning rate, step size on each update
+    gamma=0.999, #how much AI cares abt reward in future vs. right now, closer to 1 cares abt future
+    train_batch_size=250,  # usually a larger number, like 2500, how many env steps per round
+    num_sgd_iter=10, #optimizer resuses steps collected for this amt of rounds before throwing away
+    model=dict(fcnet_hiddens=[512, 512], vf_share_layers=False), # "brains" shape, the "actor" (decides actions) and the "critic" (predicts how good things will turn out) get separate networks
+    lambda_=0.95, #how AI estimates if it was the right action, closer to 1 trusts long sequences of rewards more
     use_kl_loss=False,
-    clip_param=0.1,
-    grad_clip=0.5,
+    clip_param=0.1, #stops any single update from changing policy behavior by more that 10%, makes ppo stable
+    grad_clip=0.5, #hard ceiling on how big one gradient update can be
 )
 
 config = (
@@ -126,7 +126,7 @@ config = (
         env_config=dict(**env_args, episode_data_callback=episode_data_callback),
     )
     .reporting(
-        metrics_num_episodes_for_smoothing=1,
+        metrics_num_episodes_for_smoothing=10,
         metrics_episode_collection_timeout_s=180,
     )
     .checkpointing(export_native_model_files=True)
@@ -146,21 +146,14 @@ from ray import train, tune
 from ray.tune.schedulers import PopulationBasedTraining
 
 STORAGE_PATH = "/home/charlotte/ray_results/bsk_rl"
-EXPERIMENT_NAME = "pbt_basic_imaging_satellite_500iter_250bs"
+EXPERIMENT_NAME = "pbt_basic_imaging_satellite_500iter_250bs_updated"
 EXPERIMENT_DIR = Path(STORAGE_PATH) / EXPERIMENT_NAME
 TRAINING_ITERATIONS = 500  # Adjust the number of iterations as needed
 METRIC = "env_runners/episode_return_mean"
 MODE = "max"
 
-# --- Population Based Training ---
-# POPULATION_SIZE trials train side by side. Every PERTURBATION_INTERVAL
-# iterations, PBT looks at all of them: the worst-scoring trials copy the
-# checkpoint (weights) of a randomly chosen top-scoring trial, then get their
-# hyperparameters randomly nudged (or resampled) per hyperparam_mutations.
-# RLlib's PPO trainable already re-reads these values from config every
-# iteration, so no extra code is needed to "apply" a mutation.
-POPULATION_SIZE = 2  # kept small since N_CPUS=3 can't run many trials at once
-PERTURBATION_INTERVAL = 5  # iterations between exploit/explore steps
+POPULATION_SIZE = 2 # number of side by side trials
+PERTURBATION_INTERVAL = 20  # iterations between exploit/explore steps
 
 pbt_scheduler = PopulationBasedTraining(
     time_attr="training_iteration",
@@ -197,8 +190,6 @@ else:
         "PPO",
         param_space=config.to_dict(),
         tune_config=tune.TuneConfig(
-            metric=METRIC,
-            mode=MODE,
             scheduler=pbt_scheduler,
             num_samples=POPULATION_SIZE,
         ),
@@ -208,8 +199,6 @@ else:
             stop={"training_iteration": TRAINING_ITERATIONS},
             checkpoint_config=train.CheckpointConfig(
                 num_to_keep=None,  # None = never delete a checkpoint; keep them all
-                # Matched to PERTURBATION_INTERVAL so PBT always exploits a
-                # reasonably fresh checkpoint, per Ray's own recommendation.
                 checkpoint_frequency=PERTURBATION_INTERVAL,
                 checkpoint_at_end=True,
                 checkpoint_score_attribute=METRIC,
