@@ -31,6 +31,8 @@ class SatelliteUncertaintyTargets(SatelliteTasking):
         sat._imaged_targets_all = []
         sat._episode_reward_sum = 0.0
         sat._episode_step_count = 0
+        sat._battery_min = 1.0
+        sat._battery_sum = 0.0
         sat._filtered_this_step = 0
         sat._filtered_total = 0
         return obs, info
@@ -70,7 +72,7 @@ class SatelliteUncertaintyTargets(SatelliteTasking):
         )
         batt = sat.dynamics.battery_charge_fraction
         sat._battery_min = min(getattr(sat, "_battery_min", 1.0), batt)
-s       at._battery_sum = getattr(sat, "_battery_sum", 0.0) + batt
+        sat._battery_sum = getattr(sat, "_battery_sum", 0.0) + batt
         imaged_this_step = np.any(new_stored_data - old_stored_data > 0.0)
         reward_is_positive = float(np.sum(np.asarray(reward))) > 0.0
         sat._repeat_after_prev_success_count = int(

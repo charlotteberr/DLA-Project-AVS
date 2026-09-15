@@ -207,12 +207,17 @@ def episode_data_callback(env):
     max_uncertainty = max(((t.search_area ** 2) / (U_NORM ** 2) for t in targets), default=0.0)
     mean_priority = sum((t.priority for t in targets), 0.0) / len(targets) if targets else 0.0
     mean_uncertainty = sum(((t.search_area ** 2) / (U_NORM ** 2) for t in targets), 0.0) / len(targets) if targets else 0.0
+    steps = int(getattr(env.satellite, "_episode_step_count", 0))
+    battery_sum = float(getattr(env.satellite, "_battery_sum", 0.0))
+    battery_mean = battery_sum / steps if steps > 0 else -1.0
 
     data = dict(
         reward=reward,
         alive=float(env.satellite.is_alive()),
         rw_status_valid=float(env.satellite.dynamics.rw_speeds_valid()),
         battery_status_valid=float(env.satellite.dynamics.battery_valid()),
+        battery_min=float(getattr(env.satellite, "_battery_min", -1.0)),
+        battery_mean=battery_mean,
         orbits_complete=orbits,
         imaged = env.satellite.imaged,
         missed = env.satellite.missed,
