@@ -247,6 +247,7 @@ def reward_only_16(reward_function="multiply", reward_weight=1.0):
         ),
     ]
 
+
 def charge_area2_reward_32(reward_function="multiply", reward_weight=1.0):
     n_ahead = 32
     return [
@@ -273,6 +274,33 @@ def charge_area2_reward_32(reward_function="multiply", reward_weight=1.0):
         ),
     ]
 
+def charge_desat_area2_reward_32(reward_function="multiply", reward_weight=1.0):
+    n_ahead = 32
+    return [
+        obs.SatProperties(
+            dict(prop="omega_BN_B", norm=0.03),
+            dict(prop="c_hat_H"),
+            dict(prop="r_BN_P", norm=orbitalMotion.REQ_EARTH * 1e3),
+            dict(prop="v_BN_P", norm=7616.5),
+            dict(prop="battery_charge_fraction"),
+            dict(prop="wheel_speeds_fraction"),
+            dict(prop="s_hat_H", fn=s_hat_H),
+        ),
+        obs.Eclipse(norm=T_ORBIT),
+        Density(intervals=20, norm=5),
+        obs.OpportunityProperties(
+            *_target_properties(
+                include_search_area=True,
+                include_probability=True,
+                include_reward_value=True,
+                reward_function=reward_function,
+                reward_weight=reward_weight,
+            ),
+            type="target",
+            n_ahead_observe=n_ahead,
+        ),
+    ]
+    
 OBSERVATION_SPECS = {
     "area2_prob_32": {
         "factory": area2_prob_32,
@@ -319,6 +347,11 @@ OBSERVATION_SPECS = {
         "n_targets": 32,
         "obs_sat": 32,
     },
+     "charge_desat_area2_reward_32": {
+        "factory": charge_desat_area2_reward_32,
+        "n_targets": 32,
+        "obs_sat": 41,
+    },
 }
 
 
@@ -336,6 +369,12 @@ def charge_image_32():
         RetaskImage(n_ahead_image=32),
     ]
 
+def charge_desat_image_32():
+    return [
+        act.Charge(duration=60.0),
+        act.Desat(duration=60.0),
+        RetaskImage(n_ahead_image=32),
+    ]
 
 ACTION_SPECS = {
     "image_32": {
@@ -352,6 +391,11 @@ ACTION_SPECS = {
         "factory": charge_image_32,
         "n_targets": 32,
         "non_imaging_actions": 1,
+    },
+     "charge_desat_image_32": {
+        "factory": charge_desat_image_32,
+        "n_targets": 32,
+        "non_imaging_actions": 2,
     },
 }
 

@@ -2,7 +2,7 @@
 
 # Allocation account name
 #SBATCH --account=ucb821_asc1
-#SBATCH --job-name=dla-test1
+#SBATCH --job-name=charge_test3_lrdivideBy16_num_sgd20
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=32
 #SBATCH --time=11:59:00
@@ -27,13 +27,13 @@ export TMPDIR=/scratch/alpine/chbe6195/temp_dir
 
 # Edit these settings directly for each run.
 SETUP_ENV_MODULE="dynamic_imaging_rewardFlexible_flexible_specs_charge"
-OBSERVATION_SPEC="charge_area2_reward_32"
-ACTION_SPEC="charge_image_32"
+OBSERVATION_SPEC="charge_desat_area2_reward_32"
+ACTION_SPEC="charge_desat_image_32"
 REWARD_FUNCTION="multiply"
 REWARD_WEIGHT="1.0"
 FILTER_VALUE="10000.0"
 N_CASES="1"
-N_ENVS="30"
+N_ENVS="24"
 
 echo "Running training script"
 echo "Setup env module: $SETUP_ENV_MODULE"
@@ -45,7 +45,7 @@ echo "Filter value: $FILTER_VALUE"
 echo "N cases: $N_CASES"
 echo "N envs: $N_ENVS"
 
-python3 /projects/chbe6195/DLA-Project-AVS/moving_target_training/dynamic_targets_time_uncertain_charge_train.py \
+python3 -u /projects/chbe6195/DLA-Project-AVS/moving_target_training/dynamic_targets_time_uncertain_charge_train.py \
     --setup-env-module "$SETUP_ENV_MODULE" \
     --observation-spec "$OBSERVATION_SPEC" \
     --action-spec "$ACTION_SPEC" \

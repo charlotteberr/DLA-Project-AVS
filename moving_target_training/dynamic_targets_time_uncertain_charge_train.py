@@ -18,9 +18,9 @@ from ray.rllib.core.rl_module.rl_module import RLModuleSpec
 from configurations import T_ORBIT, U_NORM
 from gym_uncertainty_charge import Env_wrapped
 from RL_module_complete import GATModule
+from wandb_config import WandbLogger
 
 # os.environ["RAY_DEDUP_LOGS"] = "0"
-
 
 def train_model(
     model_name,
@@ -29,13 +29,14 @@ def train_model(
     n_envs=1,
     checkpoint_frequency=1,
     checkpoints_to_keep=2,
-    reload_frequency=500_000,
+    reload_frequency=1_000_000,
     total_timesteps=1_000_000,
     training_args={},
     rl_module_args={},
     temp_dir="/tmp",
     n_steps_switch=None,
     continue_previous=False,
+    wandb_logger=None,
 ):
     os.environ["RAY_TMPDIR"] = os.environ["TMPDIR"] = temp_dir
     output_directory = Path(output_directory)
@@ -63,7 +64,7 @@ def train_model(
         )
         .callbacks(WrappedEpisodeDataCallbacks)
         .reporting(
-            metrics_num_episodes_for_smoothing=1,
+            metrics_num_episodes_for_smoothing=30,
             metrics_episode_collection_timeout_s=180,
         )
         .checkpointing(export_native_model_files=True)
@@ -146,6 +147,9 @@ def train_model(
         results = ppo.train()
         step = results["num_env_steps_trained_lifetime"]
 
+        if wandb_logger is not None:
+            wandb_logger.log(results)
+
         checkpoint_path = (
             output_directory / model_name / f"checkpoint_{str(iter).zfill(6)}"
         )
@@ -188,6 +192,9 @@ def train_model(
                     pass
 
         iter += 1
+
+    if wandb_logger is not None:
+        wandb_logger.finish()
 
 def episode_data_callback(env):
     reward = env.rewarder.cum_reward
@@ -333,7 +340,7 @@ if __name__ == "__main__":
     )
     n_envs = max(1, args.n_envs)
     output_dir = Path(
-        "/scratch/alpine/chbe6195/simple_safety_models"   #CHANGE PATH HERE
+        "/scratch/alpine/chbe6195/simple_safety_models_desat_test1"   #CHANGE PATH HERE
         # "./simple_models"
         # Should be in /scratch/alpine/[user] when running on the cluster
     )
@@ -371,14 +378,14 @@ if __name__ == "__main__":
             ],],
             gamma=[0.9997],  # - CHECKED
             train_batch_size=[int(300 * 10 * 3)],  # - CHECKED
-            num_sgd_iter=[30],  # - CHECKED
+            num_sgd_iter=[20],  # - CHECKED
             lambda_=[0.8713548569911232],  # - CHECKED
             use_kl_loss=[False],
             clip_param=[0.14701727973480344],  # - CHECKED
             grad_clip=[0.3104924935285628],  # - CHECKED
             entropy_coeff=[[
                 [0, 0.023694512589767867],
-                [1500000, 0],
+                [3000000, 0],
             ],], # should be 0 at the end of training
         ),
         env_args={k:[v] for k,v in env_args.items()},
@@ -395,18 +402,27 @@ if __name__ == "__main__":
         with open(output_dir / f"{model_name}_params.txt", "w") as file:
             yaml.dump(sanitize_np(job_args), file)
 
+        wandb_logger = WandbLogger(
+            project_name="desat_test1",
+            run_name=f"{model_name}_RND",
+            key_path=Path(
+                "/projects/chbe6195/DLA-Project-AVS/moving_target_training/wandb_key.txt"
+            ),
+            config={},
+        )
+
         train_model(
             model_name=model_name,
             output_directory=output_dir,
             checkpoint_frequency=2,
             checkpoints_to_keep=2,
             total_timesteps=20_000_000,
-            reload_frequency=300_000,
+            reload_frequency=1_000_000,
             n_envs=n_envs,
             rl_module_args = dict(
                 model_config_dict={
                     "n_targets": 32,
-                    "obs_sat": 38,
+                    "obs_sat": 41,
                     "non_imaging_actions": 1,
                     "width_f": 256,
                     "depth_f": 2,
@@ -436,5 +452,6 @@ if __name__ == "__main__":
             ),
             temp_dir="/scratch/alpine/chbe6195/temp_dir",
             continue_previous=True,
+            wandb_logger=wandb_logger,
             **job_args,
         )

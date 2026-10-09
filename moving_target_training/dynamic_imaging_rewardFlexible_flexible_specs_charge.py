@@ -146,11 +146,14 @@ class Density(obs.Observation):
         return np.array(densities) / self.norm
 
 class CustomDynModel(dyn.FullFeaturedDynModel):
-    @aliveness_checker
+    # @aliveness_checker
     def rw_speeds_valid(self) -> bool:
         """Check if any wheel speed exceeds the ``maxWheelSpeed``."""
-    
-        return True
+        valid = all(
+            abs(speed) < self.maxWheelSpeed * macros.rpm2radsec
+            for speed in self.wheel_speeds
+        )
+        return valid
     
 class CustomFswModel(fsw.SteeringImagerFSWModel):
     
@@ -186,7 +189,7 @@ def default_observation_spec(n_ahead_observe=32):
             dict(prop="v_BN_P", norm=7616.5),  # 9,10,11 - CHECKED
             dict(prop="battery_charge_fraction"),  # 12 - CHECKED
             # dict(prop="storage_level_fraction"),  # 13
-            # dict(prop="wheel_speeds_fraction"),  # 14,15,16
+            dict(prop="wheel_speeds_fraction"),  # 14,15,16
             dict(prop="s_hat_H", fn=s_hat_H),  # 17, 18, 19 - CHECKED
         ),
         # obs.OpportunityProperties(
@@ -218,7 +221,7 @@ def default_action_spec(n_ahead_image=32):
     return [
         act.Charge(duration=60.0),  # 0
         # act.Downlink(),  # 1
-        # act.Desat(duration=60.0),  # 2
+        act.Desat(duration=60.0),  # 2
         RetaskImage(n_ahead_image=n_ahead_image),
     ]
 
@@ -314,7 +317,7 @@ def setup_env(
         threshold=10_000.0,
         observation_spec=None,
         action_spec=None,
-        failure_penalty=0,
+        failure_penalty=config.TRAINING_PARAMS["failure_penalty"],
     ):
     # This function sets up the environment and satellites for the simulation
     # It pulls in the configuration parameters from the configurations.py file
@@ -439,7 +442,7 @@ if __name__ == "__main__":
 
     # Run the simulation until timeout or agent failure
     total_reward = 0.0
-    observation, info = env.reset(seed=0)
+    observation, info = env.reset(seed=None)
     # The composed satellite action space returns a human-readable action map
     # Each satellite has the same action space and similar observation space
     print("Actions:", satellites[0].action_description)

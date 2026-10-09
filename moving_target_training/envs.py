@@ -31,7 +31,7 @@ except Exception:  # pragma: no cover
 
 ############
 # SHIELD
-
+# Make sure the observation number is correct!!!
 
 def power_shielding_function(
     obs,

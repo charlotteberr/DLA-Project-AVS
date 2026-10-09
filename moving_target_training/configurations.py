@@ -30,8 +30,8 @@ STEERING_2Hz_POWER = dict(
         ),
         imageAttErrorRequirement=0.01,
         imageRateErrorRequirement=0.01,
-        batteryStorageCapacity=80.0 * 3600 * 2,  # turn off aliveness checker or increase capacity
-        storedCharge_Init=lambda: np.random.uniform(0.4, 1.0) * 80.0 * 3600 * 2,
+        batteryStorageCapacity=80.0 * 3600,  # turn off aliveness checker or increase capacity
+        storedCharge_Init=lambda: np.random.uniform(0.4, 1.0) * 80.0 * 3600,
         u_max=0.4,  # More realistic values than 1.0
         K1=0.25,  # Control gain - CHECKED
         K3=3.0,  # Control gain - CHECKED
@@ -71,7 +71,7 @@ SIM_PARAMS = {
 }
 
 TRAINING_PARAMS = {
-    "failure_penalty": 0,
+    "failure_penalty": -3,
 #     "learning_rate": 0.00003,
 #     "gamma": 0.999,
 #     "train_batch_size": 10000,
