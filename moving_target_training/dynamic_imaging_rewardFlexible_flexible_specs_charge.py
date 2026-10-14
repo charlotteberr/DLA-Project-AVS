@@ -146,7 +146,7 @@ class Density(obs.Observation):
         return np.array(densities) / self.norm
 
 class CustomDynModel(dyn.FullFeaturedDynModel):
-    # @aliveness_checker
+    @aliveness_checker
     def rw_speeds_valid(self) -> bool:
         """Check if any wheel speed exceeds the ``maxWheelSpeed``."""
         valid = all(
@@ -233,23 +233,27 @@ class CustomSatComposed(sats.ImagingSatellite):
     dyn_type = CustomDynModel
     fsw_type = CustomFswModel
 
-    def __init__(self, *args, image_count=0, charge_count=0, **kwargs) -> None:
+    def __init__(self, *args, image_count=0, charge_count=0, desat_count=0, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.image_count = image_count
         self.charge_count = charge_count
+        self.desat_count = desat_count
 
     def set_action(self, action: Union[int, Target, str]):
         super().set_action(action)
         if action == 0:
             self.charge_count += 1
-        elif action > 0:
+        elif action == 1:          
+            self.desat_count += 1
+        elif action > 1:
             self.image_count += 1
-
 
     def reset_post_sim_init(self):
         super().reset_post_sim_init()
         self.image_count = 0
         self.charge_count = 0
+        self.desat_count = 0
+
 
     def task_target_for_imaging(
         self, target: "Target", max_duration: Optional[float] = None

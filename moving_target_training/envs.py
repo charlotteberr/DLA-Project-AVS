@@ -47,8 +47,8 @@ def power_shielding_function(
         Return None if shield not activated, else return shielded action.
     """
     current_power = obs[12]
-    eclipse_start = obs[16]
-    eclipse_end = obs[17]
+    eclipse_start = obs[19]
+    eclipse_end = obs[20]
 
     in_eclipse = eclipse_end < eclipse_start
 

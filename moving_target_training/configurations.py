@@ -44,7 +44,7 @@ STEERING_2Hz_POWER = dict(
             800 / 500
         ),  # 58 degrees minimum elevation - CHECKED
         rwBasePower=20,
-        disturbance_vector=lambda: random_disturbance_vector(0.0),
+        disturbance_vector=lambda: random_disturbance_vector(0.001),
         maxWheelSpeed=1500,
         dataStorageCapacity=20 * 8e6 * 100,
         transmitterPacketSize=0,

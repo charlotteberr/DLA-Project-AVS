@@ -418,14 +418,14 @@ if __name__ == "__main__":
         policy_name=policy_name,
         shielded=[True],
         filter=[1e4],
-        min_power=[0.15, 0.2, 0.25], # Tune for better performance/alive, 0.25 is the default value for the model
+        min_power=[0.3, 0.4, 0.5], # Tune for better performance/alive, 0.25 is the default value for the model
         reward_function=["multiply"],
         reward_weight=[1.0],
         observation_spec_name=["charge_area2_reward_32"],
         action_spec_name=["charge_image_32"],
     )
 
-    save_path = Path(__file__).resolve().parent.parent / "data" / "charge_multiply_filter_minpower_1050" 
+    save_path = Path(__file__).resolve().parent.parent / "data" / "charge_multiply_filter_higherMinpower_1050_try2" 
     os.makedirs(save_path, exist_ok=True)
 
     max_jobs = 11

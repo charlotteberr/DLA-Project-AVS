@@ -231,6 +231,8 @@ def episode_data_callback(env):
         duplicates = env.rewarder.data.duplicates,
         image_action = env.satellite.image_count,
         charge_action = env.satellite.charge_count,
+        desat_action = env.satellite.desat_count,
+        rw_speeds_max_fraction = max(abs(x) for x in env.satellite.dynamics.wheel_speeds_fraction),
         repeat_after_prev_success = int(
             getattr(env.satellite, "_repeat_after_prev_success_count", -1)
         ),
@@ -245,11 +247,9 @@ def episode_data_callback(env):
         mean_uncertainty = mean_uncertainty,
         max_uncertainty = max_uncertainty,
     )
-    if orbits > 0:
-        data["reward_per_orbit"] = reward / orbits
-    if not env.satellite.is_alive():
-        data["orbits_complete_partial_only"] = orbits
-        
+    data["reward_per_orbit"] = reward / orbits if orbits > 0 else 0.0
+    data["orbits_complete_partial_only"] = orbits if not env.satellite.is_alive() else float("nan")
+
     return data
 
 if __name__ == "__main__":
@@ -340,7 +340,7 @@ if __name__ == "__main__":
     )
     n_envs = max(1, args.n_envs)
     output_dir = Path(
-        "/scratch/alpine/chbe6195/simple_safety_models_desat_test1"   #CHANGE PATH HERE
+        "/scratch/alpine/chbe6195/simple_safety_models_desat_test3_penalty3_origSpeeds"   #CHANGE PATH HERE
         # "./simple_models"
         # Should be in /scratch/alpine/[user] when running on the cluster
     )
@@ -403,7 +403,7 @@ if __name__ == "__main__":
             yaml.dump(sanitize_np(job_args), file)
 
         wandb_logger = WandbLogger(
-            project_name="desat_test1",
+            project_name="desat_test3_charge_penalty3_origSpeeds",
             run_name=f"{model_name}_RND",
             key_path=Path(
                 "/projects/chbe6195/DLA-Project-AVS/moving_target_training/wandb_key.txt"

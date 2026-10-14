@@ -2,7 +2,7 @@
 
 # Allocation account name
 #SBATCH --account=ucb821_asc1
-#SBATCH --job-name=charge_test3_lrdivideBy16_num_sgd20
+#SBATCH --job-name=desat_test3_charge_penalty3_origSpeeds
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=32
 #SBATCH --time=11:59:00
